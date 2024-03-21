@@ -1,0 +1,66 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
+// Function to calculate GCD (Greatest Common Divisor)
+int gcd(int a, int b) {
+    if (b == 0)
+        return a;
+    return gcd(b, a % b);
+}
+
+// Function to generate keys
+void generate_keys(int p, int q, int* n, int* e, int* d) {
+    *n = p * q;
+    int phi = (p - 1) * (q - 1);
+
+    // Choose e such that 1 < e < phi and e is coprime with phi
+    *e = 2;
+    while (gcd(*e, phi) != 1) {
+        (*e)++;
+    }
+
+    // Compute d, the modular multiplicative inverse of e modulo phi
+    *d = 1;
+    while ((*e * (*d)) % phi != 1) {
+        (*d)++;
+    }
+}
+
+// Function to encrypt a message
+int encrypt(int plaintext, int e, int n) {
+    return fmod(pow(plaintext, e), n);
+}
+
+// Function to decrypt a ciphertext
+int decrypt(int ciphertext, int d, int n) {
+    return fmod(pow(ciphertext, d), n);
+}
+
+int main() {
+    int p, q, n, e, d;
+    int plaintext, ciphertext, decryptedtext;
+
+    // Input prime numbers p and q
+    printf("Enter two prime numbers (p and q): ");
+    scanf("%d %d", &p, &q);
+
+    // Generate keys
+    generate_keys(p, q, &n, &e, &d);
+    printf("Public key (e, n): (%d, %d)\n", e, n);
+    printf("Private key (d, n): (%d, %d)\n", d, n);
+
+    // Input plaintext
+    printf("Enter plaintext to encrypt: ");
+    scanf("%d", &plaintext);
+
+    // Encrypt the plaintext
+    ciphertext = encrypt(plaintext, e, n);
+    printf("Encrypted ciphertext: %d\n", ciphertext);
+
+    // Decrypt the ciphertext
+    decryptedtext = decrypt(ciphertext, d, n);
+    printf("Decrypted plaintext: %d\n", decryptedtext);
+
+    return 0;
+}
