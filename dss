@@ -1,0 +1,91 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/sha.h>
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
+
+#define MAX_MESSAGE_LEN 1024
+
+// Function to generate RSA key pair
+RSA* generate_key_pair() {
+    RSA *rsa = RSA_new();
+    BIGNUM *e = BN_new();
+    unsigned long exponent = RSA_F4;
+
+    // Set the public exponent
+    BN_set_word(e, exponent);
+
+    // Generate key pair
+    RSA_generate_key_ex(rsa, 2048, e, NULL);
+
+    BN_free(e);
+    return rsa;
+}
+
+// Function to sign a message using RSA private key
+int sign_message(const unsigned char* message, size_t message_len, RSA* rsa, unsigned char* signature) {
+    int signature_len;
+    EVP_PKEY* private_key = EVP_PKEY_new();
+    EVP_PKEY_assign_RSA(private_key, rsa);
+
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    EVP_SignInit(ctx, EVP_sha256());
+    EVP_SignUpdate(ctx, message, message_len);
+    EVP_SignFinal(ctx, signature, (unsigned int*)&signature_len, private_key);
+
+    EVP_PKEY_free(private_key);
+    EVP_MD_CTX_free(ctx);
+    return signature_len;
+}
+
+// Function to verify the signature
+int verify_signature(const unsigned char* message, size_t message_len, const unsigned char* signature, size_t signature_len, RSA* rsa) {
+    EVP_PKEY* public_key = EVP_PKEY_new();
+    EVP_PKEY_assign_RSA(public_key, rsa);
+
+    EVP_MD_CTX* ctx = EVP_MD_CTX_new();
+    EVP_VerifyInit(ctx, EVP_sha256());
+    EVP_VerifyUpdate(ctx, message, message_len);
+
+    int result = EVP_VerifyFinal(ctx, signature, signature_len, public_key);
+
+    EVP_PKEY_free(public_key);
+    EVP_MD_CTX_free(ctx);
+    return result;
+}
+
+int main() {
+    RSA *rsa;
+    unsigned char message[MAX_MESSAGE_LEN];
+    unsigned char signature[MAX_MESSAGE_LEN];
+    unsigned char verified_signature[MAX_MESSAGE_LEN];
+
+    // Generate RSA key pair
+    rsa = generate_key_pair();
+
+    // Input message
+    printf("Enter your message: ");
+    fgets((char *)message, MAX_MESSAGE_LEN, stdin);
+    message[strcspn((char *)message, "\n")] = '\0'; // Remove newline character from the input
+
+    // Calculate hash of the message
+    unsigned char hash[SHA256_DIGEST_LENGTH];
+    SHA256(message, strlen((char *)message), hash);
+
+    // Sign the message
+    int signature_len = sign_message(hash, SHA256_DIGEST_LENGTH, rsa, signature);
+    printf("Signature generated successfully.\n");
+
+    // Verify the signature
+    int verification_result = verify_signature(hash, SHA256_DIGEST_LENGTH, signature, signature_len, rsa);
+    if (verification_result == 1) {
+        printf("Signature verified successfully.\n");
+    } else {
+        printf("Signature verification failed.\n");
+    }
+
+    // Free RSA key pair
+    RSA_free(rsa);
+    return 0;
+}
