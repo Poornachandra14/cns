@@ -1,0 +1,86 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#define SIZE 5
+
+void prepareKey(char *key, char *preparedKey) {
+    int len = strlen(key), k = 0;
+    for (int i = 0; i < len; i++) {
+        if (key[i] == 'j') key[i] = 'i'; // Replace 'j' with 'i'
+        if (strchr(preparedKey, key[i]) == NULL && isalpha(key[i]))
+            preparedKey[k++] = key[i];
+    }
+    for (int i = 'a'; i <= 'z'; i++) {
+        if (i != 'j' && strchr(preparedKey, i) == NULL)
+            preparedKey[k++] = i;
+    }
+    preparedKey[k] = '\0';
+}
+
+void generateTable(char table[SIZE][SIZE], char *preparedKey) {
+    int k = 0;
+    for (int i = 0; i < SIZE; i++) {
+        for (int j = 0; j < SIZE; j++) {
+            table[i][j] = preparedKey[k++];
+        }
+    }
+}
+
+void encrypt(char table[SIZE][SIZE], char *plaintext) {
+    int len = strlen(plaintext), k = 0;
+    char pairs[len];
+    for (int i = 0; i < len; i++) {
+        if (isalpha(plaintext[i])) {
+            pairs[k++] = tolower(plaintext[i]);
+        }
+    }
+    if (k % 2 != 0) {
+        pairs[k++] = 'x'; // Add 'x' to make pairs even
+    }
+    pairs[k] = '\0';
+
+    for (int i = 0; i < k; i += 2) {
+        int r1, c1, r2, c2;
+        for (int j = 0; j < SIZE; j++) {
+            for (int l = 0; l < SIZE; l++) {
+                if (table[j][l] == pairs[i]) {
+                    r1 = j;
+                    c1 = l;
+                } else if (table[j][l] == pairs[i + 1]) {
+                    r2 = j;
+                    c2 = l;
+                }
+            }
+        }
+        if (r1 == r2) {
+            printf("%c%c ", table[r1][(c1 + 1) % SIZE], table[r2][(c2 + 1) % SIZE]);
+        } else if (c1 == c2) {
+            printf("%c%c ", table[(r1 + 1) % SIZE][c1], table[(r2 + 1) % SIZE][c2]);
+        } else {
+            printf("%c%c ", table[r1][c2], table[r2][c1]);
+        }
+    }
+}
+
+int main() {
+    char key[50];
+    char plaintext[100];
+
+    printf("Enter the key: ");
+    scanf("%s", key);
+    printf("Enter the plaintext: ");
+    getchar(); // Clear the input buffer
+    fgets(plaintext, sizeof(plaintext), stdin);
+
+    char preparedKey[26];
+    prepareKey(key, preparedKey);
+
+    char table[SIZE][SIZE];
+    generateTable(table, preparedKey);
+
+    printf("Encrypted text: ");
+    encrypt(table, plaintext);
+
+    return 0;
+}
