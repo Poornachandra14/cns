@@ -1,0 +1,43 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <openssl/des.h>
+
+#define DATA_SIZE 8 // Size of data blocks in DES
+
+// Function to print hexadecimal data
+void print_hex(const unsigned char* data, int len) {
+    for (int i = 0; i < len; i++) {
+        printf("%02X ", data[i]);
+    }
+    printf("\n");
+}
+
+int main() {
+    DES_cblock key = {0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef}; // 8-byte DES key
+    DES_key_schedule key_schedule;
+
+    // Set up the encryption key
+    DES_set_key_unchecked(&key, &key_schedule);
+
+    unsigned char plaintext[DATA_SIZE] = "OpenSSL"; // 8-byte plaintext
+    unsigned char ciphertext[DATA_SIZE];
+    unsigned char decryptedtext[DATA_SIZE];
+
+    // Encrypt the plaintext
+    DES_ecb_encrypt((DES_cblock*)plaintext, (DES_cblock*)ciphertext, &key_schedule, DES_ENCRYPT);
+
+    printf("Plaintext: ");
+    print_hex(plaintext, DATA_SIZE);
+
+    printf("Ciphertext: ");
+    print_hex(ciphertext, DATA_SIZE);
+
+    // Decrypt the ciphertext
+    DES_ecb_encrypt((DES_cblock*)ciphertext, (DES_cblock*)decryptedtext, &key_schedule, DES_DECRYPT);
+
+    printf("Decrypted text: ");
+    print_hex(decryptedtext, DATA_SIZE);
+
+    return 0;
+}
